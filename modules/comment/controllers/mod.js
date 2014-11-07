@@ -37,13 +37,29 @@ var indexController = {
         });
     },
     main:function(req,res){
-        var M = system.getPluginModel('sample');
+
+
+        console.log("aaaa");
+
+
+
+        var user = system.getPluginModel("user","comment");
+        user.testData(function(resl){
+            var data = {
+                title: "Comment Plugin",
+                data:resl
+            }
+            system.loadPluginView(res,'home/index', data,"comment");
+
+        })
+
+       /* var M = system.getPluginModel('sample');
         M.list(function(resl){
            var data = {
             title: "Comment Plugin"
             }
             system.loadPluginView(res,'home/index', data);
-        });
+        });*/
     }
 }
 

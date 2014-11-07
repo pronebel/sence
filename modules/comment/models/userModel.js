@@ -16,7 +16,7 @@ var userModel = {
             callback(results);
         });
     },
-    data:function(callback){
+    testData:function(callback){
 
         callback({
             a:1
