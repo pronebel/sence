@@ -33,6 +33,7 @@
 
 //require our needs
 var express = require('express'),
+     cors = require('cors'),
 http = require('http'),
 path = require('path'),
 exphbs  = require('express3-handlebars'),
@@ -42,14 +43,24 @@ session      = require('express-session'),
 favicon = require('serve-favicon'),
 json        = require('json'),
 urlencoded   = require('urlencode'),
-errorHandler   = require('error-handler'),
+bodyParser = require('body-parser'),
 methodOverride = require('method-override');
 global.app = express();
 
 global.sleekConfig = {};
 require(path.join(__dirname,'application/config/config.js'));
+
+
+var whitelist = ['http://localhost:8100', 'http://127.0.0.1:8100','http://tripums.com'];
+var corsOptions = {
+    origin: function(origin, callback){
+        var originIsWhitelisted = whitelist.indexOf(origin) !== -1;
+        callback(null, originIsWhitelisted);
+    }
+};
    
 app.set('env', sleekConfig.env);
+app.set('x-powered-by', 'Sleek.js');
 // all environments
 app.set('port', process.env.PORT || sleekConfig.appPort);
 app.set('host', sleekConfig.appHost ? sleekConfig.appHost : 'localhost');
@@ -57,17 +68,24 @@ app.set('views', path.join(__dirname, 'application/views'));
 app.set('view engine', 'handlebars');
 app.engine('html',  exphbs({defaultLayout: 'default',
                             layoutsDir: path.join(__dirname, 'application/layouts/'), extname:".html"})
-            ); 
+            );
+app.use(cors());
 app.use(favicon(path.join(__dirname, 'public/favicon.ico'))); 
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+
+app.use(bodyParser.json());
 app.use(helmet.xframe());
 app.use(helmet.iexss());
 app.use(helmet.contentTypeOptions());
 app.use(helmet.cacheControl());
 app.use(methodOverride());
-app.use(cookieParser('CubEtNoDeSlEek'));
-app.use(session());
+app.use(cookieParser());
+app.use(session({secret: 'CubEtNoDeSlEek', 
+                 saveUninitialized: true,
+                 resave: true}));
 app.use(express.static(path.join(__dirname, 'public')));
-//app.use(errorHandler());
 app.set('strict routing');
 
 //set Site url
@@ -75,8 +93,8 @@ global.sleekConfig.siteUrl = 'http://'+app.get('host')+':'+app.get('port');
 //get configs
 require('./system/core/sleek.js')(app);
 // development only
-if ('development' == app.get('env')) {
-    //
+if ('development' === app.get('env')) {
+   
 } 
 
 var server = http.createServer(app);

@@ -5,7 +5,7 @@
 module.exports = {
     dbHost:'localhost',
     dbPort: '',
-    dbName : 'nodetest',
+    dbName : 'sence',
     dbUser : '',
     dbPass : ''
 }

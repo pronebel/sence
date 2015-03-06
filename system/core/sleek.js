@@ -36,27 +36,14 @@ var fs = require('fs');
 var async = require('async');
 global.appPath = path.dirname(require.main.filename);
 global.HELPER ={};
-require(path.join(appPath,'application/config/defines.js'));
-require('./db.js');
+//get defines
+__def = require(path.join(appPath,'application/config/defines.js'));
 require(path.join(appPath,'system/lib/handhelpers.js'));
 var _fns = require(path.join(appPath,'system/lib/functions.js'));
-//for pluggins
+//get a copy of request for plugins
 app.use(function(req,res,next){
         res.sleekReq = req;
         next();
-});
-
-//handle 500
-app.use(function(err, req, res, next){
-    res.status(err.status || 500);
-    var realPath  = path.join(appPath,'application/views',sleekConfig.theme, 'error.html');
-    if (! fs.existsSync(realPath)) {
-        realPath = path.join(__dirname,'error.html');
-    } 
-    var templateFile = fs.readFileSync(realPath, 'utf8');
-    var template = hbs.compile(templateFile);
-    var compiled = template({ title:'Application Error', error: err.stack });
-    res.send(compiled);
 });
 
 //load custom config libraries
@@ -72,15 +59,15 @@ if(sleekConfig.configLibs){
 }
 
 //set loggings as in config
-if(sleekConfig.logToFile == true) {
+if(sleekConfig.logToFile === true) {
     var access = fs.createWriteStream(path.join(appPath, sleekConfig.accesslog), {
         flags:'a'
     });
     process.stdout.write = (function(write) {
         return function(string, encoding, fd) {
             access.write(string);
-        }
-    })(process.stdout.write)
+        };
+    })(process.stdout.write);
 
     var errorLog = fs.createWriteStream(path.join(appPath, sleekConfig.errorlog), {
         flags:'a'
@@ -88,8 +75,8 @@ if(sleekConfig.logToFile == true) {
     process.stderr.write = (function(write) {
         return function(string, encoding, fd) {
             errorLog.write(string);
-        }
-    })(process.stdout.write)
+        };
+    })(process.stdout.write);
 }
     
 global.system = {
@@ -184,34 +171,34 @@ global.system = {
             var plugsDir = fs.readdirSync(path.join(appPath,'modules'));
             async.eachSeries(plugsDir, function (plug, _pcbk) {
                 var stats = fs.statSync(path.join(appPath,'modules',plug));
-                if(stats.isDirectory() && plug.charAt(0) != '.'){
+                if(stats.isDirectory() && plug.charAt(0) !== '.'){
                     var Ovr = require(path.join(appPath,'modules',plug, 'override.js'));
                     async.eachSeries(Ovr.data, function (ovdta, _ovdbk) {
-                        if(ovdta.view == partial){
+                        if(ovdta.view === partial){
                             var _m = ovdta.mode;
-                            if (_m == 'prepend' || _m == 'append' || _m == 'replace') {
+                            if (_m === 'prepend' || _m === 'append' || _m === 'replace') {
                                 if(ovdta.controller && ovdta.action){
                                     var M = system.getPluginController(ovdta.controller,plug);
                                     var fn = M[ovdta.action];
                                     fn(function(dt){
-                                        if(_m == 'prepend') {
+                                        if(_m === 'prepend') {
                                             template = dt + template;
-                                        } else if (_m == 'append') {
+                                        } else if (_m === 'append') {
                                             template += dt;
                                         } else {
-                                            template = template;
+                                            template = dt;
                                         }
                                         _ovdbk();
                                     });
                                 } else {
                                     realPath  = path.join(appPath,'modules',plug,'views',partial+'.html');
                                     var dt = fs.readFileSync(realPath, 'utf8');
-                                    if(_m == 'prepend') {
+                                    if(_m === 'prepend') {
                                         template = dt + template;
-                                    } else if (_m == 'append') {
+                                    } else if (_m === 'append') {
                                         template += dt;
                                     } else {
-                                        template = template;
+                                        template = dt;
                                     }
                                     _ovdbk();
                                 }
@@ -253,9 +240,9 @@ global.system = {
             //if calling from plugins controller
             if(!plugin){
                 var pt = _fns._getCallerFile();
-                plugin = pt.split('/');
-                if(plugin[plugin.indexOf('controllers')-2] == 'modules') {
-                    plugin = plugin[plugin.indexOf('controllers')-1]
+                plugin = pt.split(path.sep);
+                if(plugin[plugin.indexOf('controllers')-2] === 'modules') {
+                    plugin = plugin[plugin.indexOf('controllers')-1];
                 } else {
                     this.log('Please specify plugin name');
                 }
@@ -292,13 +279,13 @@ global.system = {
             var plugsDir = fs.readdirSync(path.join(appPath,'modules'));
             async.eachSeries(plugsDir, function (plug, _pcbk) {
                 var stats = fs.statSync(path.join(appPath,'modules',plug));
-                if(stats.isDirectory() && plug.charAt(0) != '.' && fs.existsSync(path.join(appPath,'modules',plug,'override.js'))){
+                if(stats.isDirectory() && plug.charAt(0) !== '.' && fs.existsSync(path.join(appPath,'modules',plug,'override.js'))){
                     var Ovr = require(path.join(appPath,'modules',plug, 'override.js'));
                     async.eachSeries(Ovr.data, function (_ovDt, _ovcbk) {
-                        if(_ovDt.view == view && caller == 'application'){
+                        if(_ovDt.view === view && caller === 'application'){
                             var prio = _ovDt.priority ? _ovDt.priority : 0;
                             var _mode = _ovDt.mode;
-                            if(_mode == 'append' || _mode == 'prepend' || _mode == 'replace'){
+                            if(_mode === 'append' || _mode === 'prepend' || _mode === 'replace'){
                                 passedData.locals = res.locals;
                                 if(!passedData.PLUGINS){
                                     passedData.PLUGINS =  [];
@@ -397,9 +384,10 @@ global.system = {
            status = 'Error';
        }
        if(str) {
+           if(str.stack) str = str.stack;
            var log = '\n' + status + ' :: ' + new Date() + ' :\n';
            log += str +'\n';
-           if(sleekConfig.logToFile == true) {
+           if(sleekConfig.logToFile === true) {
                fs.appendFile(path.join(appPath, sleekConfig.systemlog), log, function (err) {});
            } else {
                console.log(log);
@@ -411,6 +399,7 @@ global.system = {
      * 
      * @param name file path from view folder
      * @param data Data to compile with template
+     * @param raw if true returns raw template
      * 
      * @author Robin <robin@cubettech.com>
      * @Date 13-11-2013
@@ -477,10 +466,10 @@ global.system = {
             if(!plugin){
                 var pt = _fns._getCallerFile();
                 plugin = pt.split('/');
-                if(plugin[plugin.indexOf('controllers')-2] == 'modules') {
-                    plugin = plugin[plugin.indexOf('controllers')-1]
+                if(plugin[plugin.indexOf('controllers')-2] === 'modules') {
+                    plugin = plugin[plugin.indexOf('controllers')-1];
                 } else {
-                    this.log('Please specify plugin name')
+                    this.log('Please specify plugin name');
                 }
             }
             
@@ -507,8 +496,8 @@ global.system = {
             if(!plugin){
                 var pt = _fns._getCallerFile();
                 plugin = pt.split('/');
-                if(plugin[plugin.indexOf('controllers')-2] == 'modules') {
-                    plugin = plugin[plugin.indexOf('controllers')-1]
+                if(plugin[plugin.indexOf('controllers')-2] === 'modules') {
+                    plugin = plugin[plugin.indexOf('controllers')-1];
                 } else {
                     this.log('Please specify plugin name');
                 }
@@ -534,7 +523,7 @@ global.system = {
 
                         for(var count in data.css) {
                             if (fs.existsSync(path.join(appPath,'modules', plugin, 'assets', 'css', data.css[count]+'.css'))) {
-                                scripts += '<link rel="stylesheet" href="'+path.join('/assets', plugin, 'css', data.css[count]+'.css')+'"/>\n';
+                                scripts += '<link rel="stylesheet" href="'+path.join('/assets','modules', plugin, 'css', data.css[count]+'.css')+'"/>\n';
                             } else if(fs.existsSync(path.join(appPath,'public', sleekConfig.theme, 'css', data.css[count]+'.css'))) {
                                 scripts += '<link rel="stylesheet" href="'+path.join('/', sleekConfig.theme, 'css', data.css[count]+'.css')+'"/>\n';
                             } else {
@@ -545,7 +534,7 @@ global.system = {
 
                         for(var count in data.js) {
                             if(fs.existsSync(path.join(appPath,'modules', plugin, 'assets', 'js', data.js[count]+'.js'))){
-                                scripts += '<script type="text/javascript" src="'+path.join('/assets', plugin, 'js', data.js[count]+'.js')+'" ></script>\n';
+                                scripts += '<script type="text/javascript" src="'+path.join('/assets','modules', plugin, 'js', data.js[count]+'.js')+'" ></script>\n';
                             } else if (fs.existsSync(path.join(appPath,'public', sleekConfig.theme, 'js', data.js[count]+'.js'))) {
                                 scripts += '<script type="text/javascript" src="'+path.join('/',sleekConfig.theme, 'js', data.js[count]+'.js')+'" ></script>\n';
                             } else {
@@ -560,8 +549,6 @@ global.system = {
                     hbs.registerPartial('getSleekScripts', scripts);
                     res.render(realPath, passedData);
                 }
-
-                
             });
         }
         catch (err) {
@@ -574,6 +561,7 @@ global.system = {
      * @param name file path from view folder
      * @param data Data to compile with template
      * @param plugin name (optional, if calling from plugin)
+     * @param raw if true, returns raw template file without compiling
      * 
      * @author Robin <robin@cubettech.com>
      * @Date 22-01-2014
@@ -584,10 +572,10 @@ global.system = {
             if(!plugin){
                 var pt = _fns._getCallerFile();
                 plugin = pt.split('/');
-                if(plugin[plugin.indexOf('controllers')-2] == 'modules') {
-                    plugin = plugin[plugin.indexOf('controllers')-1]
+                if(plugin[plugin.indexOf('controllers')-2] === 'modules') {
+                    plugin = plugin[plugin.indexOf('controllers')-1];
                 } else {
-                    this.log('Please specify plugin name')
+                    this.log('Please specify plugin name');
                 }
             }
             
@@ -617,11 +605,39 @@ global.system = {
             this.log(err);
         }
         
+    },
+    /**
+     * Get define values
+     * @param key define key
+     * 
+     * @author Robin <robin@cubettech.com>
+     * @Date 18-06-2014
+     **/
+    defines: function(key,value){
+        if(value) {
+            __def[key] = value;
+        } else {
+            return __def[key] ? __def[key] : '';
+        }
     }
 };
 
 module.exports = function(app){
     try {
+        //file server for plugins & themes
+        app.get('/assets/:mod?/:plugin?/:type?/:file*?', function(req, res){
+            var filepath = req.params.file + (req.params[0] || '');
+            if(!req.params.plugin || !req.params.type || !req.params.file || !req.params.mod) {
+                res.end();
+                return false;
+            } 
+            if(req.params.mod === 'modules'){
+                res.sendfile(path.join(appPath,'modules',req.params.plugin,'assets',req.params.type,filepath));
+            } else if (req.params.mod === 'themes') {
+                res.sendfile(path.join(appPath,'application/views',req.params.plugin,'assets',req.params.type,filepath));
+            }
+        });
+
         //set commons
         var R = require(path.join(appPath, 'application/config/routes.js'));
         var Helper = require(path.join(appPath, 'application/helpers/routes.js'));
@@ -639,12 +655,34 @@ module.exports = function(app){
         } else {
             commonfns = function(req,res,next){ next(); };
         }
+	
+	//routes
+	var rts = [];
+        for(var c in R.routes) {
+            var rt = R.routes[c];
+            rts[c] = system.getController(rt.controller);
+            var act = rt.action;
+            var rout = rt.route;
+            for(var r in rt.params) {
+                rout += '/' + rt.params[r] + '([A-Za-z0-9_]+)?';
+            }
+            var fn = Helper[rt.fn] ? Helper[rt.fn] : function(req,res,next){
+                next();
+            };
+            
+            if(!rt.type) {
+                rt.type = 'GET';
+            }
+            var meth = rt.type.toLowerCase();
+            app[meth](rout, commonfns, fn, rts[c][act]);
+        }
         
+	//plugin routes
         var plugsDir = fs.readdirSync(path.join(appPath,'modules'));
         var prts = [];
         for(var p in plugsDir) {
             var stats = fs.statSync(path.join(appPath,'modules',plugsDir[p]));
-            if(stats.isDirectory() && plugsDir[p].charAt(0) != '.' && fs.existsSync(path.join(appPath,'modules',plugsDir[p],'routes.js'))){
+            if(stats.isDirectory() && plugsDir[p].charAt(0) !== '.' && fs.existsSync(path.join(appPath,'modules',plugsDir[p],'routes.js'))){
                 var P = require(path.join(appPath,'modules',plugsDir[p], 'routes.js'));
                 for(var c in P.routes) {
                     var rt = P.routes[c];
@@ -653,58 +691,25 @@ module.exports = function(app){
                     var rout = rt.route;
                     
                     for(var r in rt.params) {
-                        rout += '/' + rt.params[r] + '([A-Za-z0-9_]+)?'
+                        rout += '/' + rt.params[r] + '([A-Za-z0-9_]+)?';
                     }
                     
                     var fn = Helper[rt.fn] ? Helper[rt.fn] : function(req,res,next){
                         next();
                     };
                     
-                    if(rt.type && rt.type == "POST") {
-                        app.post(rout,commonfns, fn, prts[c][act]);
-                    } else {
-                        app.get(rout,commonfns, fn, prts[c][act]);
+                    if(!rt.type) {
+                        rt.type = 'GET';
                     }
+                    var meth = rt.type.toLowerCase();
+                    app[meth](rout,commonfns, fn, prts[c][act]);
 
                 }
             }
         }
-        
-        var rts = [];
-        for(var c in R.routes) {
-            var rt = R.routes[c];
-            rts[c] = system.getController(rt.controller);
-            var act = rt.action;
-            var rout = rt.route;
-            for(var r in rt.params) {
-                rout += '/' + rt.params[r] + '([A-Za-z0-9_]+)?'
-            }
-            var fn = Helper[rt.fn] ? Helper[rt.fn] : function(req,res,next){
-                next();
-            };
-                        
-            if(rt.type && rt.type == "POST") {
-                app.post(rout, commonfns, fn, rts[c][act]);
-            } else {
-                app.get(rout, commonfns, fn, rts[c][act]);
-            }
-        }
-        
-        //file server for plugins & themes
-        app.get('/assets/:mod?/:plugin?/:type?/:file?', function(req, res){
-            if(!req.params.plugin || !req.params.type || !req.params.file || !req.params.mod) {
-                res.end();
-                return false;
-            } 
-            if(req.params.mod == 'modules'){
-                res.sendfile(path.join(appPath,'modules',req.params.plugin,'assets',req.params.type,req.params.file));
-            } else if (req.params.mod == 'themes') {
-                res.sendfile(path.join(appPath,'application/views',req.params.plugin,'assets',req.params.type,req.params.file));
-            }
-        });
 
         //handle unknown requests
-        app.get('*/([A-Za-z0-9_]+)', function(req, res){
+        app.all('*/([A-Za-z0-9_]+)', function(req, res){
             var realPath  = path.join(appPath,'application/views',sleekConfig.theme, 'error.html');
             if (! fs.existsSync(realPath)) {
                 realPath = path.join(__dirname,'error.html');
@@ -716,7 +721,43 @@ module.exports = function(app){
         });
 
 
+        //handle 500
+        app.use(function(err, req, res, next){
+            res.status(err.status || 500);
+            var type= req.accepts('html', 'json', 'text');
+            system.log(err.stack);
+            if(type === 'html') {
+                var realPath  = path.join(appPath,'application/views',sleekConfig.theme, 'error.html');
+                var builtinview = false;
+                if (! fs.existsSync(realPath)) {
+                    builtinview = true;
+                    realPath = path.join(__dirname,'error.html');
+                } 
+                var templateFile = fs.readFileSync(realPath, 'utf8');
+                var template = hbs.compile(templateFile);
+                var er = app.get('env') === 'development' ? err : 'Sorry! Something went wrong. Please try later';
+                var ers = app.get('env') === 'development' ? err.stack : '';
+                var compiled = template({ title:'Application Error', error: er, stack:ers });
+                if((app.get('env') !== 'development') && builtinview) {
+                    compiled += '<style type="text/css">pre{text-align: center;}</style>';
+                }
+                res.send(compiled);
+                
+            } else if (type === 'json') {
+                var error = { message: err.message, stack: err.stack };
+                for (var prop in err) error[prop] = err[prop];
+                var json = JSON.stringify({ error: error });
+                res.setHeader('Content-Type', 'application/json');
+                res.end(json);
+              // plain text
+            } else {
+                res.setHeader('Content-Type', 'text/plain');
+                res.end(err.stack || String(err));
+            }
+            
+        });
+
     } catch (e){
         system.log(e);
     }
-}
+};

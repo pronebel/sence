@@ -10,9 +10,9 @@ var indexController = {
             title: "用户中心"
         }
         //load index.html from home directory
-        system.loadView(res,'home/user/user', data);
+       // system.loadView(res,'home/user/user', data);
 
-       /* var user = system.getPluginModel("user","comment");
+        var user = system.getPluginModel("user","comment");
         user.testData(function(resl){
             var data = {
                 title: "Comment Plugin",
@@ -20,7 +20,9 @@ var indexController = {
             }
             system.loadView(res,'home/user/user', data);
 
-        })*/
+        })
+
+
 
 
     }
